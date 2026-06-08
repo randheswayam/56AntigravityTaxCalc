@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { CheckCircle2, Wallet, Shield, BarChart3, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
-interface LandingPageProps {
-  onStart: () => void;
-}
+interface LandingPageProps {}
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+const LandingPage: React.FC<LandingPageProps> = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
@@ -205,22 +203,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 >
                   <span>Pay via Superprofile</span>
                   <ExternalLink className="w-5 h-5" />
-                </button>
-
-                <div className="relative py-2">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border"></div>
-                  </div>
-                  <div className="relative flex justify-center text-small">
-                    <span className="bg-card px-4 text-text-secondary">After successful payment</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={onStart}
-                  className="w-full py-4 px-6 rounded-xl font-semibold transition-all bg-success hover:bg-success/90 text-white shadow-md transform hover:-translate-y-0.5"
-                >
-                  I have completed the payment →
                 </button>
               </div>
             </div>

@@ -18,7 +18,7 @@ function App() {
   return (
     <div className="App">
       {!isWizardStarted ? (
-        <LandingPage onStart={() => setIsWizardStarted(true)} />
+        <LandingPage />
       ) : (
         <WizardShell onExit={() => setIsWizardStarted(false)} />
       )}
