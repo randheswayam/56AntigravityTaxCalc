@@ -18,7 +18,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   };
 
   const handlePaymentClick = () => {
-    window.location.href = 'https://superprofile.bio/Tanveer2115/CxQblUOPax';
+    // Append standard redirect parameters. Some gateways use 'redirect_url', others use 'return_url'.
+    // We add ?payment=success so our app knows to bypass the landing page upon return.
+    const returnUrl = encodeURIComponent(window.location.origin + '?payment=success');
+    window.location.href = `https://superprofile.bio/Tanveer2115/CxQblUOPax?redirect_url=${returnUrl}&return_url=${returnUrl}`;
   };
 
   const faqs = [
