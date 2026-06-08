@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import Step1Age from './steps/Step1Age';
 import Step2Income from './steps/Step2Income';
+import LivePreview from './LivePreview';
 
 interface WizardShellProps {
   onExit: () => void;
@@ -46,9 +47,9 @@ export default function WizardShell({ onExit }: WizardShellProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 relative">
       {/* Progress Bar Header */}
-      <div className="sticky top-0 bg-card border-b border-border z-10 shadow-sm">
+      <div className="sticky top-0 bg-card border-b border-border z-20 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <button 
             onClick={prevStep}
@@ -71,7 +72,7 @@ export default function WizardShell({ onExit }: WizardShellProps) {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
+        <div className="flex flex-col lg:flex-row gap-8 items-start relative">
           
           {/* Main Content Area */}
           <div className="w-full lg:w-3/5 space-y-8">
@@ -101,8 +102,8 @@ export default function WizardShell({ onExit }: WizardShellProps) {
               </div>
             </div>
 
-            {/* FAQ Section Placeholder */}
-            <div className="mt-12">
+            {/* FAQ Section */}
+            <div className="mt-12 hidden lg:block">
               <h3 className="text-h3 mb-6 text-text-primary">Frequently Asked Questions</h3>
               <div className="space-y-4">
                 {faqs.map((faq, index) => (
@@ -131,17 +132,9 @@ export default function WizardShell({ onExit }: WizardShellProps) {
             </div>
           </div>
 
-          {/* Live Preview Panel Placeholder */}
-          <div className="w-full lg:w-2/5 lg:sticky lg:top-24 hidden lg:block">
-            <div className="bg-card rounded-2xl shadow-sm border border-border p-6 space-y-6">
-              <div className="text-center pb-4 border-b border-border">
-                <h3 className="text-h3 font-bold text-text-primary">Live Preview</h3>
-                <p className="text-small text-text-secondary">Updates as you type</p>
-              </div>
-              <div className="py-12 text-center text-text-secondary text-small border-2 border-dashed border-border rounded-lg">
-                Preview Panel Coming in Phase 3
-              </div>
-            </div>
+          {/* Live Preview Panel */}
+          <div className="w-full lg:w-2/5 lg:sticky lg:top-[5.5rem] z-10 order-first lg:order-last mb-8 lg:mb-0">
+            <LivePreview />
           </div>
           
         </div>
