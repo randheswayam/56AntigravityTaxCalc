@@ -37,7 +37,22 @@ export default {
         'small': ['14px', { lineHeight: '1.5', fontWeight: '400' }],
         'caption': ['12px', { lineHeight: '1.4', fontWeight: '400' }],
         'number': ['32px', { lineHeight: '1.2', fontWeight: '700' }],
-      }
+      },
+      keyframes: {
+        'fade-in-up': {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(10px)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0)',
+          },
+        },
+      },
+      animation: {
+        'fade-in-up': 'fade-in-up 0.3s ease-out',
+      },
     },
   },
   plugins: [],

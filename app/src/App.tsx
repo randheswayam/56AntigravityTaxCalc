@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import LandingPage from './components/LandingPage';
+import WizardShell from './components/WizardShell';
 
 function App() {
   const [isWizardStarted, setIsWizardStarted] = useState(false);
@@ -9,15 +10,7 @@ function App() {
       {!isWizardStarted ? (
         <LandingPage onStart={() => setIsWizardStarted(true)} />
       ) : (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-          <h1 className="text-h2 mb-4 text-primary">Wizard Started</h1>
-          <button 
-            onClick={() => setIsWizardStarted(false)}
-            className="text-primary-light hover:underline"
-          >
-            ← Back to Landing Page
-          </button>
-        </div>
+        <WizardShell onExit={() => setIsWizardStarted(false)} />
       )}
     </div>
   );
