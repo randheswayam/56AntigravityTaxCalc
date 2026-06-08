@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Wallet, Shield, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle2, Wallet, Shield, BarChart3, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -7,9 +7,20 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentClicked, setPaymentClicked] = useState(false);
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
+  };
+
+  const handleStartClick = () => {
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentClick = () => {
+    window.open('https://superprofile.bio/Tanveer2115/CxQblUOPax', '_blank');
+    setPaymentClicked(true);
   };
 
   const faqs = [
@@ -36,7 +47,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
       {/* Privacy Notice Banner */}
       <div className="bg-primary-light/10 text-primary text-small text-center py-2 px-4">
         🔒 Your data never leaves this device. All calculations happen in your browser.
@@ -72,10 +83,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
             <div className="pt-4 flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <button 
-                onClick={onStart}
+                onClick={handleStartClick}
                 className="bg-primary hover:bg-primary-light text-white font-semibold py-4 px-8 rounded-xl text-h3 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                Start Your Free Tax Check →
+                Start Your Tax Check →
               </button>
               <a href="#how-it-works" className="text-primary hover:text-primary-light font-medium text-body">
                 How does this work?
@@ -170,6 +181,66 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           <p>Built for FY 2025-26 (AY 2026-27)</p>
         </div>
       </footer>
+
+      {/* Payment Modal Overlay */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in-up">
+          <div className="bg-card w-full max-w-md mx-4 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-6 md:p-8 space-y-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Wallet className="w-8 h-8" />
+                </div>
+                <h2 className="text-h2 text-text-primary mb-2">Complete Your Payment</h2>
+                <p className="text-body text-text-secondary">
+                  Please complete the payment using the secure Superprofile link to access your personalized tax calculation.
+                </p>
+              </div>
+
+              <div className="space-y-4 pt-4">
+                <button
+                  onClick={handlePaymentClick}
+                  className="w-full flex items-center justify-center gap-2 bg-text-primary hover:bg-black text-white font-semibold py-4 px-6 rounded-xl transition-colors"
+                >
+                  <span>Pay via Superprofile</span>
+                  <ExternalLink className="w-5 h-5" />
+                </button>
+
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border"></div>
+                  </div>
+                  <div className="relative flex justify-center text-small">
+                    <span className="bg-card px-4 text-text-secondary">After successful payment</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onStart}
+                  disabled={!paymentClicked}
+                  className={`w-full py-4 px-6 rounded-xl font-semibold transition-all ${
+                    paymentClicked 
+                      ? 'bg-success hover:bg-success/90 text-white shadow-md transform hover:-translate-y-0.5' 
+                      : 'bg-border text-text-secondary cursor-not-allowed'
+                  }`}
+                >
+                  I have completed the payment →
+                </button>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="bg-background px-6 py-4 flex justify-center border-t border-border">
+              <button 
+                onClick={() => setShowPaymentModal(false)}
+                className="text-text-secondary hover:text-primary transition-colors font-medium text-small"
+              >
+                Cancel and return
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
