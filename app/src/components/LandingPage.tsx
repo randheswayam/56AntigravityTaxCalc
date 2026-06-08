@@ -8,7 +8,6 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentClicked, setPaymentClicked] = useState(false);
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -19,8 +18,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   };
 
   const handlePaymentClick = () => {
-    window.open('https://superprofile.bio/Tanveer2115/CxQblUOPax', '_blank');
-    setPaymentClicked(true);
+    window.location.href = 'https://superprofile.bio/Tanveer2115/CxQblUOPax';
   };
 
   const faqs = [
