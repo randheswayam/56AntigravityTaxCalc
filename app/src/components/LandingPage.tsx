@@ -1,18 +1,28 @@
 import { useState } from 'react';
-import { CheckCircle2, Wallet, Shield, BarChart3, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Wallet, Shield, BarChart3, ChevronDown, ChevronUp, ExternalLink, User, LogOut, Calculator } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
-interface LandingPageProps {}
+interface LandingPageProps {
+  onStart: () => void;
+}
 
-const LandingPage: React.FC<LandingPageProps> = () => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const { user, logout, hasPaid } = useAuthStore();
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
   };
 
   const handleStartClick = () => {
-    setShowPaymentModal(true);
+    if (hasPaid) {
+      onStart();
+    } else {
+      setShowPaymentModal(true);
+    }
   };
 
   const handlePaymentClick = () => {
@@ -47,6 +57,49 @@ const LandingPage: React.FC<LandingPageProps> = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative">
+      {/* Top Navbar */}
+      <header className="bg-card border-b border-border sticky top-0 z-40">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-primary font-bold text-h3">
+            <Calculator className="w-6 h-6" />
+            <span>TaxCalc India</span>
+          </div>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center gap-2 hover:bg-background p-2 rounded-lg transition-colors"
+            >
+              <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                <User className="w-5 h-5" />
+              </div>
+              <span className="font-medium hidden sm:block">{user?.name}</span>
+              <ChevronDown className={`w-4 h-4 text-text-secondary transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Profile Dropdown */}
+            {showProfileMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-lg py-2 animate-fade-in-up">
+                <div className="px-4 py-2 border-b border-border mb-2 sm:hidden">
+                  <p className="font-medium truncate">{user?.name}</p>
+                  <p className="text-caption text-text-secondary truncate">{user?.email}</p>
+                </div>
+                <div className="px-4 py-2 hidden sm:block border-b border-border mb-2">
+                  <p className="text-caption text-text-secondary truncate">{user?.email}</p>
+                </div>
+                <button
+                  onClick={logout}
+                  className="w-full text-left px-4 py-2 text-error hover:bg-error/5 flex items-center gap-2 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
       {/* Privacy Notice Banner */}
       <div className="bg-primary-light/10 text-primary text-small text-center py-2 px-4">
         🔒 Your data never leaves this device. All calculations happen in your browser.
@@ -85,7 +138,7 @@ const LandingPage: React.FC<LandingPageProps> = () => {
                 onClick={handleStartClick}
                 className="bg-primary hover:bg-primary-light text-white font-semibold py-4 px-8 rounded-xl text-h3 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                Start Your Tax Check →
+                {hasPaid ? 'Continue Your Tax Check →' : 'Start Your Tax Check →'}
               </button>
               <a href="#how-it-works" className="text-primary hover:text-primary-light font-medium text-body">
                 How does this work?
