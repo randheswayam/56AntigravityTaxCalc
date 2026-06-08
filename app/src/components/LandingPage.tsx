@@ -215,12 +215,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
                 <button
                   onClick={onStart}
-                  disabled={!paymentClicked}
-                  className={`w-full py-4 px-6 rounded-xl font-semibold transition-all ${
-                    paymentClicked 
-                      ? 'bg-success hover:bg-success/90 text-white shadow-md transform hover:-translate-y-0.5' 
-                      : 'bg-border text-text-secondary cursor-not-allowed'
-                  }`}
+                  className="w-full py-4 px-6 rounded-xl font-semibold transition-all bg-success hover:bg-success/90 text-white shadow-md transform hover:-translate-y-0.5"
                 >
                   I have completed the payment →
                 </button>
