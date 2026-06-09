@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { useAuthStore } from '../../store/useAuthStore';
 import { Shield } from 'lucide-react';
 
 interface RegisterProps {
   onGoToLogin: () => void;
+  onGoToHome: () => void;
 }
 
-export default function Register({ onGoToLogin }: RegisterProps) {
+export default function Register({ onGoToLogin, onGoToHome }: RegisterProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +35,8 @@ export default function Register({ onGoToLogin }: RegisterProps) {
     users.push(newUser);
     localStorage.setItem('mock_users', JSON.stringify(users));
 
-    // Auto-login after registration
-    login({ name: newUser.name, email: newUser.email });
+    alert('Registration successful! Please login with your credentials.');
+    onGoToLogin();
   };
 
   return (
@@ -97,11 +96,21 @@ export default function Register({ onGoToLogin }: RegisterProps) {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-small text-text-secondary">
-          Already have an account?{' '}
-          <button onClick={onGoToLogin} className="text-primary hover:underline font-medium">
-            Login here
-          </button>
+        <div className="mt-6 text-center text-small text-text-secondary space-y-3">
+          <div>
+            Already have an account?{' '}
+            <button onClick={onGoToLogin} className="text-primary hover:underline font-medium">
+              Login here
+            </button>
+          </div>
+          <div className="pt-2 border-t border-border">
+            <button 
+              onClick={onGoToHome} 
+              className="text-text-secondary hover:text-text-primary transition-colors font-medium"
+            >
+              ← Back to Home
+            </button>
+          </div>
         </div>
       </div>
     </div>

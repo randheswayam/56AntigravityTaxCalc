@@ -4,9 +4,15 @@ import { useAuthStore } from '../store/useAuthStore';
 
 interface LandingPageProps {
   onStart: () => void;
+  onNavigateToRegister: () => void;
+  onNavigateToLogin: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ 
+  onStart, 
+  onNavigateToRegister, 
+  onNavigateToLogin 
+}) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -18,7 +24,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   };
 
   const handleStartClick = () => {
-    if (hasPaid) {
+    if (!user) {
+      onNavigateToRegister();
+    } else if (hasPaid) {
       onStart();
     } else {
       setShowPaymentModal(true);
@@ -65,38 +73,55 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             <span>TaxCalc India</span>
           </div>
           
-          <div className="relative">
-            <button 
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 hover:bg-background p-2 rounded-lg transition-colors"
-            >
-              <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                <User className="w-5 h-5" />
-              </div>
-              <span className="font-medium hidden sm:block">{user?.name}</span>
-              <ChevronDown className={`w-4 h-4 text-text-secondary transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
-            </button>
+          {!user ? (
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={onNavigateToLogin}
+                className="text-primary hover:text-primary-light font-semibold px-4 py-2 text-body transition-colors"
+              >
+                Login
+              </button>
+              <button 
+                onClick={onNavigateToRegister}
+                className="bg-primary hover:bg-primary-light text-white font-semibold px-4 py-2 rounded-xl text-body transition-all shadow-md transform hover:-translate-y-0.5"
+              >
+                Register
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <button 
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2 hover:bg-background p-2 rounded-lg transition-colors"
+              >
+                <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5" />
+                </div>
+                <span className="font-medium hidden sm:block">{user?.name}</span>
+                <ChevronDown className={`w-4 h-4 text-text-secondary transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
+              </button>
 
-            {/* Profile Dropdown */}
-            {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-lg py-2 animate-fade-in-up">
-                <div className="px-4 py-2 border-b border-border mb-2 sm:hidden">
-                  <p className="font-medium truncate">{user?.name}</p>
-                  <p className="text-caption text-text-secondary truncate">{user?.email}</p>
+              {/* Profile Dropdown */}
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-lg py-2 animate-fade-in-up">
+                  <div className="px-4 py-2 border-b border-border mb-2 sm:hidden">
+                    <p className="font-medium truncate">{user?.name}</p>
+                    <p className="text-caption text-text-secondary truncate">{user?.email}</p>
+                  </div>
+                  <div className="px-4 py-2 hidden sm:block border-b border-border mb-2">
+                    <p className="text-caption text-text-secondary truncate">{user?.email}</p>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="w-full text-left px-4 py-2 text-error hover:bg-error/5 flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </button>
                 </div>
-                <div className="px-4 py-2 hidden sm:block border-b border-border mb-2">
-                  <p className="text-caption text-text-secondary truncate">{user?.email}</p>
-                </div>
-                <button
-                  onClick={logout}
-                  className="w-full text-left px-4 py-2 text-error hover:bg-error/5 flex items-center gap-2 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </header>
 

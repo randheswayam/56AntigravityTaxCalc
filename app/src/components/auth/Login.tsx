@@ -4,9 +4,10 @@ import { Wallet } from 'lucide-react';
 
 interface LoginProps {
   onGoToRegister: () => void;
+  onGoToHome: () => void;
 }
 
-export default function Login({ onGoToRegister }: LoginProps) {
+export default function Login({ onGoToRegister, onGoToHome }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -87,11 +88,21 @@ export default function Login({ onGoToRegister }: LoginProps) {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-small text-text-secondary">
-          Don't have an account?{' '}
-          <button onClick={onGoToRegister} className="text-primary hover:underline font-medium">
-            Sign up here
-          </button>
+        <div className="mt-6 text-center text-small text-text-secondary space-y-3">
+          <div>
+            Don't have an account?{' '}
+            <button onClick={onGoToRegister} className="text-primary hover:underline font-medium">
+              Sign up here
+            </button>
+          </div>
+          <div className="pt-2 border-t border-border">
+            <button 
+              onClick={onGoToHome} 
+              className="text-text-secondary hover:text-text-primary transition-colors font-medium"
+            >
+              ← Back to Home
+            </button>
+          </div>
         </div>
       </div>
     </div>
