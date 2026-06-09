@@ -61,24 +61,101 @@ export function calculateNewRegimeTax(grossIncome: number, _ageCategory: AgeCate
   };
 }
 
+export function calculateHRAExemption(
+  basicSalary: number,
+  hraReceived: number,
+  rentPaid: number,
+  isMetro: boolean
+): number {
+  const annualBasic = basicSalary * 12;
+  const annualHRA = hraReceived * 12;
+  const annualRent = rentPaid * 12;
+
+  // Condition 1: Actual HRA received
+  const condition1 = annualHRA;
+
+  // Condition 2: Rent paid minus 10% of basic
+  const condition2 = Math.max(0, annualRent - 0.10 * annualBasic);
+
+  // Condition 3: 50% for metro, 40% for non-metro of basic
+  const metroPercentage = isMetro ? 0.50 : 0.40;
+  const condition3 = metroPercentage * annualBasic;
+
+  // Exemption is the least of the three
+  return Math.min(condition1, condition2, condition3);
+}
+
+export function calculate80GGDeduction(
+  grossIncome: number,
+  rentPaid: number
+): number {
+  const annualRent = rentPaid * 12;
+  
+  // Condition 1: ₹5,000/month (₹60,000 annually)
+  const condition1 = 60000;
+  
+  // Condition 2: 25% of gross income
+  const condition2 = 0.25 * grossIncome;
+  
+  // Condition 3: Rent paid minus 10% of gross income
+  const condition3 = Math.max(0, annualRent - 0.10 * grossIncome);
+
+  // Deduction is the least of the three
+  return Math.min(condition1, condition2, condition3);
+}
+
 export function calculateOldRegimeTax(
   grossIncome: number, 
   ageCategory: AgeCategory,
-  _deductions: any = {} // We'll type this properly later, using baseline for now
+  state: any = {}
 ): TaxResult {
   // Step 1: Apply Standard Deduction
   const standardDeduction = 50000;
 
-  // For Phase 3 baseline, we just use standard deduction
-  // In later phases, we will sum up all real deductions
-  const totalDeductions = standardDeduction;
+  // Step 2: Calculate HRA Exemption or 80GG Rent Deduction (mutually exclusive)
+  let hraExemption = 0;
+  let section80GG = 0;
+
+  if (state.paysRent && state.monthlyRent > 0) {
+    if (state.hraReceived > 0) {
+      hraExemption = calculateHRAExemption(
+        state.basicSalary || 0,
+        state.hraReceived || 0,
+        state.monthlyRent || 0,
+        state.isMetro || false
+      );
+    } else {
+      section80GG = calculate80GGDeduction(grossIncome, state.monthlyRent || 0);
+    }
+  }
+
+  // Step 3: Calculate PF (contributes to 80C)
+  const annualPF = (state.pfDeduction || 0) * 12;
+  const total80C = Math.min((state.total80C || 0) + annualPF, 150000);
+
+  // Future sections (80D, 24, etc.) are pre-structured here
+  const section80D = Math.min(state.healthSelf || 0, 25000) + Math.min(state.healthParents || 0, state.parentsSenior ? 50000 : 25000);
+  const section24 = Math.min(state.homeLoanInterest || 0, 200000);
+  const npsAmount = Math.min(state.npsAmount || 0, 50000); // 80CCD(1B)
+  const educationLoanInterest = state.educationLoanInterest || 0; // 80E
+  const professionalTax = Math.min(state.professionalTaxAmount || 0, 2500);
+
+  const totalDeductions = standardDeduction + 
+    total80C + 
+    section80D + 
+    section24 + 
+    npsAmount + 
+    educationLoanInterest + 
+    professionalTax + 
+    hraExemption + 
+    section80GG;
 
   let taxableIncome = Math.max(0, grossIncome - totalDeductions);
 
-  // Step 3: Get age-based slabs
+  // Step 4: Get age-based slabs
   const slabs = getOldRegimeSlabs(ageCategory);
 
-  // Step 4: Calculate tax
+  // Step 5: Calculate tax
   let tax = 0;
   let remainingIncome = taxableIncome;
   let previousLimit = 0;
@@ -91,14 +168,14 @@ export function calculateOldRegimeTax(
     previousLimit = slab.limit;
   }
 
-  // Step 5: Apply Section 87A Rebate
+  // Step 6: Apply Section 87A Rebate
   let rebate = 0;
   if (taxableIncome <= 500000) {
     rebate = Math.min(tax, 12500);
   }
   tax -= rebate;
 
-  // Step 6: Apply 4% Cess
+  // Step 7: Apply 4% Cess
   const cess = tax * 0.04;
   const totalTax = tax + cess;
 

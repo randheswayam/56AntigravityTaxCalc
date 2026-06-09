@@ -29,12 +29,22 @@ export default function LivePreview() {
     setIsCalculating(true);
     const timer = setTimeout(() => {
       setNewRegime(calculateNewRegimeTax(grossIncome, state.ageCategory));
-      setOldRegime(calculateOldRegimeTax(grossIncome, state.ageCategory));
+      setOldRegime(calculateOldRegimeTax(grossIncome, state.ageCategory, state));
       setIsCalculating(false);
-    }, 300); // 300ms debounce
+    }, 300);
 
     return () => clearTimeout(timer);
-  }, [grossIncome, state.ageCategory]);
+  }, [
+    grossIncome,
+    state.ageCategory,
+    state.basicSalary,
+    state.hraReceived,
+    state.pfDeduction,
+    state.paysRent,
+    state.monthlyRent,
+    state.isMetro,
+    state.total80C
+  ]);
 
   const diff = oldRegime.totalTax - newRegime.totalTax;
   const isNewBetter = diff > 0;
@@ -86,6 +96,10 @@ export default function LivePreview() {
               </div>
             </div>
             <div className="space-y-2 text-caption">
+              <div className="flex justify-between text-success">
+                <span>Deductions</span>
+                <span className="font-medium">-{formatCurrency(oldRegime.totalDeductions || 0)}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Taxable Inc.</span>
                 <span className="font-medium">{formatCurrency(oldRegime.taxableIncome)}</span>
@@ -108,6 +122,10 @@ export default function LivePreview() {
               </div>
             </div>
             <div className="space-y-2 text-caption">
+              <div className="flex justify-between text-success">
+                <span>Deductions</span>
+                <span className="font-medium">-₹75,000</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Taxable Inc.</span>
                 <span className="font-medium">{formatCurrency(newRegime.taxableIncome)}</span>

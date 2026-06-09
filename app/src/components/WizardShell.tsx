@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import Step1Age from './steps/Step1Age';
 import Step2Income from './steps/Step2Income';
+import Step3OtherIncome from './steps/Step3OtherIncome';
+import Step4SalaryStructure from './steps/Step4SalaryStructure';
+import Step5RentDetails from './steps/Step5RentDetails';
 import LivePreview from './LivePreview';
 
 interface WizardShellProps {
@@ -30,6 +33,12 @@ export default function WizardShell({ onExit }: WizardShellProps) {
         return <Step1Age />;
       case 2:
         return <Step2Income />;
+      case 3:
+        return <Step3OtherIncome />;
+      case 4:
+        return <Step4SalaryStructure />;
+      case 5:
+        return <Step5RentDetails />;
       default:
         return (
           <div className="py-12 text-center text-text-secondary">
