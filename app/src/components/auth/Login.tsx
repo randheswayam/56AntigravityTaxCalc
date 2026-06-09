@@ -16,11 +16,21 @@ export default function Login({ onGoToRegister }: LoginProps) {
     e.preventDefault();
     setError('');
 
+    // Check for admin credentials
+    if (email === 'admin@taxcalc.com' && password === 'admin123') {
+      login({ name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true });
+      return;
+    }
+
     // Fetch mock users from localStorage
     const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
     const user = users.find((u: any) => u.email === email && u.password === password);
 
     if (user) {
+      if (user.isActive === false) {
+        setError('Your account has been deactivated. Please contact support.');
+        return;
+      }
       login({ name: user.name, email: user.email });
     } else {
       setError('Invalid email or password. Please try again.');

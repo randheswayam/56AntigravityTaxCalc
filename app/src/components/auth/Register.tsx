@@ -25,7 +25,14 @@ export default function Register({ onGoToLogin }: RegisterProps) {
     }
 
     // Save new user
-    const newUser = { name, email, password };
+    const newUser = { 
+      name, 
+      email, 
+      password,
+      createdAt: new Date().toISOString(),
+      hasPaid: false,
+      isActive: true
+    };
     users.push(newUser);
     localStorage.setItem('mock_users', JSON.stringify(users));
 

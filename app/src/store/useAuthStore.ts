@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export interface User {
   name: string;
   email: string;
+  isAdmin?: boolean;
 }
 
 interface AuthState {
@@ -19,7 +20,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   
   login: (user) => {
     localStorage.setItem('currentUser', JSON.stringify(user));
-    set({ user });
+    
+    // Determine payment status from user database
+    let userPaid = false;
+    if (user.isAdmin) {
+      userPaid = true;
+    } else {
+      const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
+      const found = users.find((u: any) => u.email === user.email);
+      if (found) {
+        userPaid = !!found.hasPaid;
+      }
+    }
+    
+    localStorage.setItem('hasPaid', userPaid.toString());
+    set({ user, hasPaid: userPaid });
   },
   
   logout: () => {
@@ -29,6 +44,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setPaid: (status) => {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (currentUser && !currentUser.isAdmin) {
+      const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
+      const updatedUsers = users.map((u: any) => 
+        u.email === currentUser.email ? { ...u, hasPaid: status } : u
+      );
+      localStorage.setItem('mock_users', JSON.stringify(updatedUsers));
+    }
+    
     localStorage.setItem('hasPaid', status.toString());
     set({ hasPaid: status });
   }
