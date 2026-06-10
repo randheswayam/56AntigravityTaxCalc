@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     email TEXT UNIQUE NOT NULL,
     has_paid BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
+    role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -51,13 +52,14 @@ ALTER TABLE public.tax_calculations ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, name, email, has_paid, is_active)
+    INSERT INTO public.profiles (id, name, email, has_paid, is_active, role)
     VALUES (
         NEW.id,
         COALESCE(NEW.raw_user_meta_data->>'name', 'Valued User'),
         NEW.email,
         FALSE,
-        TRUE
+        TRUE,
+        'user'
     );
     
     -- Also initialize an empty tax calculations row
@@ -75,44 +77,52 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 
 -- 4. RLS Policies Configuration
 
+-- Admin check function
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+DECLARE
+    user_role TEXT;
+BEGIN
+    SELECT role INTO user_role FROM public.profiles WHERE id = auth.uid();
+    RETURN user_role = 'admin';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Profiles policies
 CREATE POLICY "Allow public read access to active profiles" 
     ON public.profiles FOR SELECT 
-    USING (is_active = TRUE);
+    USING (is_active = TRUE OR public.is_admin());
 
 CREATE POLICY "Allow users to read their own profile" 
     ON public.profiles FOR SELECT 
-    USING (auth.uid() = id);
+    USING (auth.uid() = id OR public.is_admin());
 
 CREATE POLICY "Allow users to insert their own profile" 
     ON public.profiles FOR INSERT 
-    WITH CHECK (auth.uid() = id);
+    WITH CHECK (auth.uid() = id OR public.is_admin());
 
 CREATE POLICY "Allow users to update their own profile name" 
     ON public.profiles FOR UPDATE 
-    USING (auth.uid() = id)
-    WITH CHECK (auth.uid() = id);
+    USING (auth.uid() = id OR public.is_admin())
+    WITH CHECK (auth.uid() = id OR public.is_admin());
+
+CREATE POLICY "Allow admin to manage all profiles"
+    ON public.profiles FOR ALL
+    USING (public.is_admin());
 
 -- Tax Calculations policies
 CREATE POLICY "Allow users to read their own tax data" 
     ON public.tax_calculations FOR SELECT 
-    USING (auth.uid() = id);
+    USING (auth.uid() = id OR public.is_admin());
 
 CREATE POLICY "Allow users to insert their own tax data row" 
     ON public.tax_calculations FOR INSERT 
-    WITH CHECK (auth.uid() = id);
+    WITH CHECK (auth.uid() = id OR public.is_admin());
 
 CREATE POLICY "Allow users to update their own tax data" 
     ON public.tax_calculations FOR UPDATE 
-    USING (auth.uid() = id)
-    WITH CHECK (auth.uid() = id);
-
--- 5. Admin bypass configurations (if using standard client client-key, we can allow reading/writing everything for admin accounts)
--- Create policy for Admin view (allowing read/write to all profiles if logged in user is admin@taxcalc.com)
-CREATE POLICY "Allow admin to manage all profiles"
-    ON public.profiles FOR ALL
-    USING (auth.jwt() ->> 'email' = 'admin@taxcalc.com');
+    USING (auth.uid() = id OR public.is_admin());
 
 CREATE POLICY "Allow admin to manage all tax calculations"
     ON public.tax_calculations FOR ALL
-    USING (auth.jwt() ->> 'email' = 'admin@taxcalc.com');
+    USING (public.is_admin());

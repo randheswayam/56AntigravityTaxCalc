@@ -5,6 +5,8 @@ export interface UserRecord {
   createdAt: string;
   hasPaid: boolean;
   isActive: boolean;
+  isAdmin?: boolean;
+  role?: string;
 }
 
 export const DEFAULT_MOCK_USERS: UserRecord[] = [];

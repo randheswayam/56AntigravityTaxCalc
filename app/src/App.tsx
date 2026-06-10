@@ -44,7 +44,8 @@ function App() {
               name: session.user.user_metadata?.name || 'Valued User',
               email: session.user.email || '',
               hasPaid: false,
-              isActive: true
+              isActive: true,
+              isAdmin: false
             };
             
             // Sync user profile status

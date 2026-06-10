@@ -55,7 +55,8 @@ export const dbService = {
             name: name,
             email: email,
             has_paid: false,
-            is_active: true
+            is_active: true,
+            role: 'user'
           };
           const { error: insErr } = await supabase
             .from('profiles')
@@ -73,7 +74,8 @@ export const dbService = {
           name: profile?.name || name,
           email: user.email || email,
           hasPaid: profile?.has_paid || false,
-          isActive: profile?.is_active || true
+          isActive: profile?.is_active || true,
+          isAdmin: profile?.role === 'admin'
         } : null,
         session,
         emailConfirmationRequired
@@ -90,7 +92,8 @@ export const dbService = {
         password,
         createdAt: new Date().toISOString(),
         hasPaid: false,
-        isActive: true
+        isActive: true,
+        role: 'user'
       };
       users.push(newUser);
       saveLocalUsers(users);
@@ -99,7 +102,8 @@ export const dbService = {
           name,
           email,
           hasPaid: false,
-          isActive: true
+          isActive: true,
+          isAdmin: false
         },
         session: null,
         emailConfirmationRequired: false
@@ -109,42 +113,6 @@ export const dbService = {
 
   async signIn(email: string, password: string) {
     if (isSupabaseConfigured && supabase) {
-      // Admin special sign-in / registration in Supabase
-      if (email === 'admin@taxcalc.com') {
-        try {
-          const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-          
-          if (error) {
-            // Try to create the admin user in Supabase Auth if they don't exist
-            if (error.message.includes('Invalid login credentials') || error.message.includes('Email not confirmed') || error.message.includes('User not found')) {
-              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                  data: { name: 'System Admin' }
-                }
-              });
-              if (signUpError) throw signUpError;
-              
-              if (signUpData.session) {
-                return { name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true };
-              } else {
-                throw new Error('Admin account registered in Supabase but requires email verification. Check your inbox.');
-              }
-            }
-            throw error;
-          }
-          return { name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true };
-        } catch (err: any) {
-          console.warn('Supabase admin login failed, falling back to local admin session:', err);
-          // Fallback to override so admin is not locked out of UI
-          return { name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true };
-        }
-      }
-
       // 1. Supabase Auth Sign In
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -181,7 +149,8 @@ export const dbService = {
           name: data.user.user_metadata?.name || 'Valued User',
           email: data.user.email || '',
           has_paid: false,
-          is_active: true
+          is_active: true,
+          role: 'user'
         };
         const { error: insertError } = await supabase
           .from('profiles')
@@ -202,7 +171,8 @@ export const dbService = {
         name: data.user.user_metadata?.name || 'Valued User',
         email: data.user.email || '',
         has_paid: false,
-        is_active: true
+        is_active: true,
+        role: 'user'
       };
       
       if (!resolvedProfile.is_active) {
@@ -214,10 +184,11 @@ export const dbService = {
         name: resolvedProfile.name,
         email: resolvedProfile.email,
         hasPaid: resolvedProfile.has_paid,
-        isActive: resolvedProfile.is_active
+        isActive: resolvedProfile.is_active,
+        isAdmin: resolvedProfile.role === 'admin'
       };
     } else {
-      // Admin override for local fallback
+      // Admin override for local fallback (kept for failsafe development usage)
       if (email === 'admin@taxcalc.com' && password === 'admin123') {
         return { name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true };
       }
@@ -236,7 +207,8 @@ export const dbService = {
         name: user.name,
         email: user.email,
         hasPaid: user.hasPaid,
-        isActive: user.isActive
+        isActive: user.isActive,
+        isAdmin: user.role === 'admin' || email === 'admin@taxcalc.com'
       };
     }
   },
@@ -272,7 +244,8 @@ export const dbService = {
           name: data.name,
           email: data.email,
           hasPaid: data.has_paid,
-          isActive: data.is_active
+          isActive: data.is_active,
+          isAdmin: data.role === 'admin'
         };
       }
     }
@@ -355,7 +328,8 @@ export const dbService = {
         email: p.email,
         createdAt: p.created_at,
         hasPaid: p.has_paid,
-        isActive: p.is_active
+        isActive: p.is_active,
+        isAdmin: p.role === 'admin'
       }));
     } else {
       return getLocalUsers().map((u: any) => ({
@@ -363,7 +337,8 @@ export const dbService = {
         email: u.email,
         createdAt: u.createdAt,
         hasPaid: u.hasPaid,
-        isActive: u.isActive
+        isActive: u.isActive,
+        isAdmin: u.role === 'admin' || u.email === 'admin@taxcalc.com'
       }));
     }
   },
