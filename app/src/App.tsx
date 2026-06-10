@@ -4,6 +4,7 @@ import WizardShell from './components/WizardShell';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import AdminDashboard from './components/AdminDashboard';
+import ResultPage from './components/ResultPage';
 import { useAuthStore } from './store/useAuthStore';
 
 function App() {
@@ -12,7 +13,7 @@ function App() {
   const setPaid = useAuthStore((state) => state.setPaid);
   const logout = useAuthStore((state) => state.logout);
 
-  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register' | 'wizard'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register' | 'wizard' | 'result'>('landing');
 
   // Active session gate for deactivated users
   useEffect(() => {
@@ -95,7 +96,14 @@ function App() {
           />
         );
       case 'wizard':
-        return <WizardShell onExit={() => setCurrentView('landing')} />;
+        return (
+          <WizardShell 
+            onExit={() => setCurrentView('landing')} 
+            onComplete={() => setCurrentView('result')} 
+          />
+        );
+      case 'result':
+        return <ResultPage onRestart={() => setCurrentView('landing')} />;
       case 'landing':
       default:
         return (

@@ -43,7 +43,14 @@ export default function LivePreview() {
     state.paysRent,
     state.monthlyRent,
     state.isMetro,
-    state.total80C
+    state.total80C,
+    state.healthSelf,
+    state.healthParents,
+    state.parentsSenior,
+    state.homeLoanInterest,
+    state.npsAmount,
+    state.educationLoanInterest,
+    state.professionalTaxAmount
   ]);
 
   const diff = oldRegime.totalTax - newRegime.totalTax;
