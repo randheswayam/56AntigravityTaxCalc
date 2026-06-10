@@ -68,25 +68,58 @@ export const dbService = {
       });
       if (error) throw error;
       
-      // Fetch details from profiles table
-      const { data: profile, error: profileError } = await supabase
+      // Fetch details from profiles table with fallback
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
         
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.warn('Profile fetch error during login:', profileError);
+      }
       
-      if (!profile.is_active) {
+      if (!profile) {
+        // Create profile on-the-fly if missing (trigger failsafe)
+        const newProfile = {
+          id: data.user.id,
+          name: data.user.user_metadata?.name || 'Valued User',
+          email: data.user.email || '',
+          has_paid: false,
+          is_active: true
+        };
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert(newProfile);
+          
+        if (insertError) {
+          console.error('Failed to create missing profile on-the-fly:', insertError);
+        } else {
+          profile = newProfile;
+          // Pre-populate empty tax calculation row
+          await supabase
+            .from('tax_calculations')
+            .upsert({ id: data.user.id });
+        }
+      }
+      
+      const resolvedProfile = profile || {
+        name: data.user.user_metadata?.name || 'Valued User',
+        email: data.user.email || '',
+        has_paid: false,
+        is_active: true
+      };
+      
+      if (!resolvedProfile.is_active) {
         throw new Error('Your account has been deactivated. Please contact support.');
       }
       
       return {
         id: data.user.id,
-        name: profile.name,
-        email: profile.email,
-        hasPaid: profile.has_paid,
-        isActive: profile.is_active
+        name: resolvedProfile.name,
+        email: resolvedProfile.email,
+        hasPaid: resolvedProfile.has_paid,
+        isActive: resolvedProfile.is_active
       };
     } else {
       // 2. LocalStorage Fallback
