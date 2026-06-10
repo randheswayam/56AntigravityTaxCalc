@@ -64,17 +64,52 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'users'>('overview');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Load and seed mock users on mount
   useEffect(() => {
-    const stored = localStorage.getItem('mock_users');
-    if (!stored) {
-      localStorage.setItem('mock_users', JSON.stringify(DEFAULT_MOCK_USERS));
-      setUsers(DEFAULT_MOCK_USERS);
-    } else {
-      setUsers(JSON.parse(stored));
-    }
+    const loadUsers = () => {
+      const stored = localStorage.getItem('mock_users');
+      if (!stored) {
+        localStorage.setItem('mock_users', JSON.stringify(DEFAULT_MOCK_USERS));
+        setUsers(DEFAULT_MOCK_USERS);
+      } else {
+        setUsers(JSON.parse(stored));
+      }
+    };
+
+    loadUsers();
+
+    // Listen to storage changes from other tabs for real-time updates
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mock_users') {
+        try {
+          setUsers(JSON.parse(e.newValue || '[]'));
+        } catch (err) {
+          console.error('Error parsing synced users:', err);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      const stored = localStorage.getItem('mock_users');
+      if (stored) {
+        setUsers(JSON.parse(stored));
+      } else {
+        localStorage.setItem('mock_users', JSON.stringify(DEFAULT_MOCK_USERS));
+        setUsers(DEFAULT_MOCK_USERS);
+      }
+      setIsRefreshing(false);
+    }, 600); // 600ms premium visual feedback delay
+  };
 
   const saveUsers = (updatedUsers: UserRecord[]) => {
     localStorage.setItem('mock_users', JSON.stringify(updatedUsers));
@@ -272,7 +307,12 @@ export default function AdminDashboard() {
               </div>
               
               <div className="text-small text-text-secondary flex items-center gap-2 self-end sm:self-auto">
-                <RefreshCw className="w-4 h-4 text-primary animate-spin-hover cursor-pointer" onClick={() => setUsers(JSON.parse(localStorage.getItem('mock_users') || '[]'))} />
+                <RefreshCw 
+                  className={`w-4 h-4 text-primary cursor-pointer transition-all ${
+                    isRefreshing ? 'animate-spin' : 'hover:rotate-180 duration-500'
+                  }`} 
+                  onClick={handleRefresh} 
+                />
                 <span>Showing {filteredUsers.length} of {totalUsers} users</span>
               </div>
             </div>

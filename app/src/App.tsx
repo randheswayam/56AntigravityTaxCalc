@@ -19,24 +19,34 @@ function App() {
   // Active session gate for deactivated users
   useEffect(() => {
     if (user && !user.isAdmin) {
-      const checkActiveStatus = () => {
+      const syncUserStatus = () => {
         const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
         const found = users.find((u: any) => u.email === user.email);
-        if (found && found.isActive === false) {
-          logout();
-          setCurrentView('landing');
-          alert('Your session has been terminated because your account was deactivated.');
+        if (found) {
+          // Sync account active status
+          if (found.isActive === false) {
+            logout();
+            setCurrentView('landing');
+            alert('Your session has been terminated because your account was deactivated.');
+            return;
+          }
+          
+          // Sync payment status
+          const currentStoreHasPaid = useAuthStore.getState().hasPaid;
+          if (!!found.hasPaid !== currentStoreHasPaid) {
+            setPaid(!!found.hasPaid);
+          }
         }
       };
 
       // Check on mount and listen to storage events (cross-tab sync)
-      checkActiveStatus();
-      window.addEventListener('storage', checkActiveStatus);
+      syncUserStatus();
+      window.addEventListener('storage', syncUserStatus);
       return () => {
-        window.removeEventListener('storage', checkActiveStatus);
+        window.removeEventListener('storage', syncUserStatus);
       };
     }
-  }, [user, logout]);
+  }, [user, logout, setPaid]);
 
   // Handle successful login redirects
   useEffect(() => {
