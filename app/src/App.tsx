@@ -124,13 +124,50 @@ function App() {
       // Check on mount
       syncUserStatus();
 
-      // Listen to storage events only if using local fallback
-      if (!isSupabaseConfigured) {
+      let intervalId: any;
+      let channel: any;
+
+      if (isSupabaseConfigured && supabase && user.id) {
+        // 1. Realtime subscription (for instant database push changes)
+        channel = supabase
+          .channel(`profile-sync-${user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'profiles',
+              filter: `id=eq.${user.id}`
+            },
+            (payload) => {
+              const updatedProfile = payload.new as any;
+              if (updatedProfile) {
+                if (!updatedProfile.is_active) {
+                  logout();
+                  setCurrentView('landing');
+                  alert('Your session has been terminated because your account was deactivated.');
+                } else {
+                  setPaid(updatedProfile.has_paid);
+                }
+              }
+            }
+          )
+          .subscribe();
+
+        // 2. Periodic poll (failsafe in case Realtime replication is disabled in Supabase dashboard)
+        intervalId = setInterval(syncUserStatus, 5000);
+      } else if (!isSupabaseConfigured) {
+        // LocalStorage fallback sync (cross-tab)
         window.addEventListener('storage', syncUserStatus);
-        return () => {
-          window.removeEventListener('storage', syncUserStatus);
-        };
       }
+
+      return () => {
+        if (intervalId) clearInterval(intervalId);
+        if (channel && supabase) supabase.removeChannel(channel);
+        if (!isSupabaseConfigured) {
+          window.removeEventListener('storage', syncUserStatus);
+        }
+      };
     }
   }, [user, logout, setPaid]);
 
