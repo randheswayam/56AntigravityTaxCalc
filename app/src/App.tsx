@@ -5,6 +5,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import AdminDashboard from './components/AdminDashboard';
 import ResultPage from './components/ResultPage';
+import ProfilePage from './components/ProfilePage';
 import { useAuthStore } from './store/useAuthStore';
 
 function App() {
@@ -13,7 +14,7 @@ function App() {
   const setPaid = useAuthStore((state) => state.setPaid);
   const logout = useAuthStore((state) => state.logout);
 
-  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register' | 'wizard' | 'result'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register' | 'wizard' | 'result' | 'profile'>('landing');
 
   // Active session gate for deactivated users
   useEffect(() => {
@@ -104,6 +105,8 @@ function App() {
         );
       case 'result':
         return <ResultPage onRestart={() => setCurrentView('landing')} />;
+      case 'profile':
+        return <ProfilePage onBack={() => setCurrentView('landing')} />;
       case 'landing':
       default:
         return (
@@ -111,6 +114,7 @@ function App() {
             onStart={() => setCurrentView('wizard')} 
             onNavigateToRegister={() => setCurrentView('register')} 
             onNavigateToLogin={() => setCurrentView('login')} 
+            onNavigateToProfile={() => setCurrentView('profile')}
           />
         );
     }

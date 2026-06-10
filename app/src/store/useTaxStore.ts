@@ -44,12 +44,12 @@ export interface TaxState {
   professionalTaxAmount: number;
 
   // Actions
-  updateField: <K extends keyof Omit<TaxState, 'updateField'>>(field: K, value: TaxState[K]) => void;
+  updateField: <K extends keyof Omit<TaxState, 'updateField' | 'resetTaxData'>>(field: K, value: TaxState[K]) => void;
+  resetTaxData: () => void;
 }
 
-export const useTaxStore = create<TaxState>((set) => ({
-  // Default values
-  ageCategory: 'below60',
+const defaultValues = {
+  ageCategory: 'below60' as AgeCategory,
   monthlyTakeHome: 0,
   otherIncome: 0,
   basicSalary: 0,
@@ -73,6 +73,11 @@ export const useTaxStore = create<TaxState>((set) => ({
   educationLoanInterest: 0,
   hasProfessionalTax: false,
   professionalTaxAmount: 0,
+};
+
+export const useTaxStore = create<TaxState>((set) => ({
+  ...defaultValues,
 
   updateField: (field, value) => set((state) => ({ ...state, [field]: value })),
+  resetTaxData: () => set((state) => ({ ...state, ...defaultValues })),
 }));

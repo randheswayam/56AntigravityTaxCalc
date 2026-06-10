@@ -6,12 +6,14 @@ interface LandingPageProps {
   onStart: () => void;
   onNavigateToRegister: () => void;
   onNavigateToLogin: () => void;
+  onNavigateToProfile: () => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ 
   onStart, 
   onNavigateToRegister, 
-  onNavigateToLogin 
+  onNavigateToLogin,
+  onNavigateToProfile
 }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -112,8 +114,18 @@ const LandingPage: React.FC<LandingPageProps> = ({
                     <p className="text-caption text-text-secondary truncate">{user?.email}</p>
                   </div>
                   <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      onNavigateToProfile();
+                    }}
+                    className="w-full text-left px-4 py-2 text-text-primary hover:bg-background-dark/20 flex items-center gap-2 transition-colors font-medium"
+                  >
+                    <User className="w-4 h-4 text-primary" />
+                    <span>My Profile</span>
+                  </button>
+                  <button
                     onClick={logout}
-                    className="w-full text-left px-4 py-2 text-error hover:bg-error/5 flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-4 py-2 text-error hover:bg-error/5 flex items-center gap-2 transition-colors font-medium border-t border-border mt-1 pt-2"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>
