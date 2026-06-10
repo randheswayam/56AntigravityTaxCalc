@@ -24,7 +24,12 @@ function App() {
     seedMockUsers();
     const params = new URLSearchParams(window.location.search);
     if (params.get('admin') === 'true') {
-      setCurrentView('admin');
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser && currentUser.isAdmin) {
+        setCurrentView('admin');
+      } else {
+        setCurrentView('login');
+      }
     }
   }, []);
 
@@ -131,15 +136,17 @@ function App() {
 
   // Handle successful login redirects
   useEffect(() => {
-    if (user && !user.isAdmin) {
+    if (user) {
       if (currentView === 'login') {
-        if (hasPaid) {
+        if (user.isAdmin) {
+          setCurrentView('admin');
+        } else if (hasPaid) {
           setCurrentView('wizard');
         } else {
           setCurrentView('landing');
         }
       }
-    } else if (!user) {
+    } else {
       if (currentView === 'wizard') {
         setCurrentView('landing');
       }
@@ -160,15 +167,6 @@ function App() {
       }
     }
   }, [setPaid]);
-
-  // If logged in as admin or bypassing via URL, render Admin Dashboard
-  if ((user && user.isAdmin) || currentView === 'admin') {
-    return (
-      <div className="App">
-        <AdminDashboard onExit={handleExitAdmin} />
-      </div>
-    );
-  }
 
   // Render view based on state
   const renderView = () => {
@@ -198,6 +196,16 @@ function App() {
         return <ResultPage onRestart={() => setCurrentView('landing')} />;
       case 'profile':
         return <ProfilePage onBack={() => setCurrentView('landing')} />;
+      case 'admin':
+        if (user && user.isAdmin) {
+          return <AdminDashboard onExit={handleExitAdmin} />;
+        }
+        return (
+          <Login 
+            onGoToRegister={() => setCurrentView('register')} 
+            onGoToHome={() => setCurrentView('landing')} 
+          />
+        );
       case 'landing':
       default:
         return (
@@ -206,6 +214,7 @@ function App() {
             onNavigateToRegister={() => setCurrentView('register')} 
             onNavigateToLogin={() => setCurrentView('login')} 
             onNavigateToProfile={() => setCurrentView('profile')}
+            onNavigateToAdmin={() => setCurrentView('admin')}
           />
         );
     }

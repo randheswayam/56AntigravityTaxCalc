@@ -7,13 +7,15 @@ interface LandingPageProps {
   onNavigateToRegister: () => void;
   onNavigateToLogin: () => void;
   onNavigateToProfile: () => void;
+  onNavigateToAdmin?: () => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ 
   onStart, 
   onNavigateToRegister, 
   onNavigateToLogin,
-  onNavigateToProfile
+  onNavigateToProfile,
+  onNavigateToAdmin
 }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -123,6 +125,18 @@ const LandingPage: React.FC<LandingPageProps> = ({
                     <User className="w-4 h-4 text-primary" />
                     <span>My Profile</span>
                   </button>
+                  {user?.isAdmin && onNavigateToAdmin && (
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onNavigateToAdmin();
+                      }}
+                      className="w-full text-left px-4 py-2 text-text-primary hover:bg-background-dark/20 flex items-center gap-2 transition-colors font-medium"
+                    >
+                      <Shield className="w-4 h-4 text-primary" />
+                      <span>Admin Panel</span>
+                    </button>
+                  )}
                   <button
                     onClick={logout}
                     className="w-full text-left px-4 py-2 text-error hover:bg-error/5 flex items-center gap-2 transition-colors font-medium border-t border-border mt-1 pt-2"
