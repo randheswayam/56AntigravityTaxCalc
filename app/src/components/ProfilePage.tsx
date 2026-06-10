@@ -108,7 +108,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
 
   const handlePaymentRedirect = () => {
     const returnUrl = encodeURIComponent(window.location.origin + '?payment=success');
-    window.location.href = `https://superprofile.bio/Tanveer2115/CxQblUOPax?redirect_url=${returnUrl}&return_url=${returnUrl}`;
+    window.location.href = `https://superprofile.bio/vp/tax-calculator-app?redirect_url=${returnUrl}&return_url=${returnUrl}`;
   };
 
   return (
