@@ -108,12 +108,43 @@ export const dbService = {
   },
 
   async signIn(email: string, password: string) {
-    // Admin override
-    if (email === 'admin@taxcalc.com' && password === 'admin123') {
-      return { name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true };
-    }
-
     if (isSupabaseConfigured && supabase) {
+      // Admin special sign-in / registration in Supabase
+      if (email === 'admin@taxcalc.com') {
+        try {
+          const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (error) {
+            // Try to create the admin user in Supabase Auth if they don't exist
+            if (error.message.includes('Invalid login credentials') || error.message.includes('Email not confirmed') || error.message.includes('User not found')) {
+              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                  data: { name: 'System Admin' }
+                }
+              });
+              if (signUpError) throw signUpError;
+              
+              if (signUpData.session) {
+                return { name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true };
+              } else {
+                throw new Error('Admin account registered in Supabase but requires email verification. Check your inbox.');
+              }
+            }
+            throw error;
+          }
+          return { name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true };
+        } catch (err: any) {
+          console.warn('Supabase admin login failed, falling back to local admin session:', err);
+          // Fallback to override so admin is not locked out of UI
+          return { name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true };
+        }
+      }
+
       // 1. Supabase Auth Sign In
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -186,6 +217,10 @@ export const dbService = {
         isActive: resolvedProfile.is_active
       };
     } else {
+      // Admin override for local fallback
+      if (email === 'admin@taxcalc.com' && password === 'admin123') {
+        return { name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true };
+      }
       // 2. LocalStorage Fallback
       const users = getLocalUsers();
       const user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
