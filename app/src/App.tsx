@@ -7,6 +7,7 @@ import AdminDashboard from './components/AdminDashboard';
 import ResultPage from './components/ResultPage';
 import ProfilePage from './components/ProfilePage';
 import { useAuthStore } from './store/useAuthStore';
+import { seedMockUsers } from './utils/mockDb';
 
 function App() {
   const user = useAuthStore((state) => state.user);
@@ -14,7 +15,24 @@ function App() {
   const setPaid = useAuthStore((state) => state.setPaid);
   const logout = useAuthStore((state) => state.logout);
 
-  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register' | 'wizard' | 'result' | 'profile'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register' | 'wizard' | 'result' | 'profile' | 'admin'>('landing');
+
+  // Seeding mock users database on startup and check for URL admin parameter
+  useEffect(() => {
+    seedMockUsers();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true') {
+      setCurrentView('admin');
+    }
+  }, []);
+
+  const handleExitAdmin = () => {
+    logout();
+    const url = new URL(window.location.href);
+    url.searchParams.delete('admin');
+    window.history.replaceState({}, document.title, url.pathname);
+    setCurrentView('landing');
+  };
 
   // Active session gate for deactivated users
   useEffect(() => {
@@ -80,11 +98,11 @@ function App() {
     }
   }, [setPaid]);
 
-  // If logged in as admin, render Admin Dashboard
-  if (user && user.isAdmin) {
+  // If logged in as admin or bypassing via URL, render Admin Dashboard
+  if ((user && user.isAdmin) || currentView === 'admin') {
     return (
       <div className="App">
-        <AdminDashboard />
+        <AdminDashboard onExit={handleExitAdmin} />
       </div>
     );
   }

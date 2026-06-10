@@ -13,53 +13,14 @@ import {
   Ban
 } from 'lucide-react';
 
-interface UserRecord {
-  name: string;
-  email: string;
-  createdAt: string;
-  hasPaid: boolean;
-  isActive: boolean;
+import { DEFAULT_MOCK_USERS } from '../utils/mockDb';
+import type { UserRecord } from '../utils/mockDb';
+
+interface AdminDashboardProps {
+  onExit?: () => void;
 }
 
-const DEFAULT_MOCK_USERS: UserRecord[] = [
-  {
-    name: 'Rahul Sharma',
-    email: 'rahul.sharma@example.com',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-    hasPaid: true,
-    isActive: true,
-  },
-  {
-    name: 'Priya Patel',
-    email: 'priya.patel@example.com',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-    hasPaid: false,
-    isActive: true,
-  },
-  {
-    name: 'Amit Verma',
-    email: 'amit.verma@example.com',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-    hasPaid: true,
-    isActive: true,
-  },
-  {
-    name: 'Sneha Reddy',
-    email: 'sneha.reddy@example.com',
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    hasPaid: false,
-    isActive: false, // Deactivated
-  },
-  {
-    name: 'Vikram Singh',
-    email: 'vikram.singh@example.com',
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
-    hasPaid: true,
-    isActive: true,
-  }
-];
-
-export default function AdminDashboard() {
+export default function AdminDashboard({ onExit }: AdminDashboardProps) {
   const logout = useAuthStore((state) => state.logout);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -74,7 +35,12 @@ export default function AdminDashboard() {
         localStorage.setItem('mock_users', JSON.stringify(DEFAULT_MOCK_USERS));
         setUsers(DEFAULT_MOCK_USERS);
       } else {
-        setUsers(JSON.parse(stored));
+        try {
+          setUsers(JSON.parse(stored));
+        } catch (err) {
+          console.error('Error parsing stored users:', err);
+          setUsers([]);
+        }
       }
     };
 
@@ -102,7 +68,11 @@ export default function AdminDashboard() {
     setTimeout(() => {
       const stored = localStorage.getItem('mock_users');
       if (stored) {
-        setUsers(JSON.parse(stored));
+        try {
+          setUsers(JSON.parse(stored));
+        } catch (err) {
+          console.error('Error parsing refreshed users:', err);
+        }
       } else {
         localStorage.setItem('mock_users', JSON.stringify(DEFAULT_MOCK_USERS));
         setUsers(DEFAULT_MOCK_USERS);
@@ -163,7 +133,10 @@ export default function AdminDashboard() {
           </div>
           
           <button 
-            onClick={logout}
+            onClick={() => {
+              logout();
+              if (onExit) onExit();
+            }}
             className="flex items-center gap-2 hover:bg-error/5 text-error px-4 py-2 rounded-xl transition-colors font-medium border border-transparent hover:border-error/20"
           >
             <LogOut className="w-4 h-4" />
