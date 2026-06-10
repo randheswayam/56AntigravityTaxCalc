@@ -8,6 +8,8 @@ import ResultPage from './components/ResultPage';
 import ProfilePage from './components/ProfilePage';
 import { useAuthStore } from './store/useAuthStore';
 import { seedMockUsers } from './utils/mockDb';
+import { supabase, isSupabaseConfigured } from './utils/supabaseClient';
+import { dbService } from './utils/dbService';
 
 function App() {
   const user = useAuthStore((state) => state.user);
@@ -26,6 +28,40 @@ function App() {
     }
   }, []);
 
+  // Listen to Supabase auth state change and sync to Zustand store
+  useEffect(() => {
+    if (isSupabaseConfigured && supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          dbService.fetchUserProfile(session.user.id).then((profile) => {
+            const resolved = profile || {
+              id: session.user.id,
+              name: session.user.user_metadata?.name || 'Valued User',
+              email: session.user.email || '',
+              hasPaid: false,
+              isActive: true
+            };
+            
+            // Sync user profile status
+            const currentUser = useAuthStore.getState().user;
+            if (!currentUser || currentUser.id !== resolved.id || currentUser.name !== resolved.name) {
+              useAuthStore.getState().login(resolved);
+            }
+          }).catch(console.error);
+        } else if (event === 'SIGNED_OUT') {
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser && !currentUser.isAdmin) {
+            useAuthStore.getState().logout();
+          }
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, []);
+
   const handleExitAdmin = () => {
     logout();
     const url = new URL(window.location.href);
@@ -34,35 +70,62 @@ function App() {
     setCurrentView('landing');
   };
 
-  // Active session gate for deactivated users
+  // Active session gate for deactivated/paid status sync
   useEffect(() => {
     if (user && !user.isAdmin) {
-      const syncUserStatus = () => {
-        const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
-        const found = users.find((u: any) => u.email === user.email);
-        if (found) {
-          // Sync account active status
-          if (found.isActive === false) {
-            logout();
-            setCurrentView('landing');
-            alert('Your session has been terminated because your account was deactivated.');
-            return;
+      const syncUserStatus = async () => {
+        try {
+          if (isSupabaseConfigured) {
+            const profile = await dbService.getCurrentUserProfile();
+            if (profile) {
+              // Sync account active status
+              if (!profile.isActive) {
+                logout();
+                setCurrentView('landing');
+                alert('Your session has been terminated because your account was deactivated.');
+                return;
+              }
+              
+              // Sync payment status
+              const currentStoreHasPaid = useAuthStore.getState().hasPaid;
+              if (profile.hasPaid !== currentStoreHasPaid) {
+                setPaid(profile.hasPaid);
+              }
+            }
+          } else {
+            const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
+            const found = users.find((u: any) => u.email === user.email);
+            if (found) {
+              // Sync account active status
+              if (found.isActive === false) {
+                logout();
+                setCurrentView('landing');
+                alert('Your session has been terminated because your account was deactivated.');
+                return;
+              }
+              
+              // Sync payment status
+              const currentStoreHasPaid = useAuthStore.getState().hasPaid;
+              if (!!found.hasPaid !== currentStoreHasPaid) {
+                setPaid(!!found.hasPaid);
+              }
+            }
           }
-          
-          // Sync payment status
-          const currentStoreHasPaid = useAuthStore.getState().hasPaid;
-          if (!!found.hasPaid !== currentStoreHasPaid) {
-            setPaid(!!found.hasPaid);
-          }
+        } catch (err) {
+          console.error('Error syncing user status:', err);
         }
       };
 
-      // Check on mount and listen to storage events (cross-tab sync)
+      // Check on mount
       syncUserStatus();
-      window.addEventListener('storage', syncUserStatus);
-      return () => {
-        window.removeEventListener('storage', syncUserStatus);
-      };
+
+      // Listen to storage events only if using local fallback
+      if (!isSupabaseConfigured) {
+        window.addEventListener('storage', syncUserStatus);
+        return () => {
+          window.removeEventListener('storage', syncUserStatus);
+        };
+      }
     }
   }, [user, logout, setPaid]);
 

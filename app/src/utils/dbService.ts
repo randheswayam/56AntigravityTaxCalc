@@ -33,7 +33,51 @@ export const dbService = {
         }
       });
       if (error) throw error;
-      return { email: data.user?.email, name };
+      
+      const session = data.session;
+      const user = data.user;
+      const emailConfirmationRequired = user && !session;
+      
+      let profile = null;
+      if (user) {
+        // Try to fetch profile (it might be created by trigger)
+        let { data: prof } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        profile = prof;
+        
+        if (!profile && !emailConfirmationRequired) {
+          // If trigger didn't run and confirmation not required, create profile on-the-fly
+          const newProfile = {
+            id: user.id,
+            name: name,
+            email: email,
+            has_paid: false,
+            is_active: true
+          };
+          const { error: insErr } = await supabase
+            .from('profiles')
+            .insert(newProfile);
+          if (!insErr) {
+            profile = newProfile;
+            await supabase.from('tax_calculations').upsert({ id: user.id });
+          }
+        }
+      }
+
+      return {
+        user: user ? {
+          id: user.id,
+          name: profile?.name || name,
+          email: user.email || email,
+          hasPaid: profile?.has_paid || false,
+          isActive: profile?.is_active || true
+        } : null,
+        session,
+        emailConfirmationRequired
+      };
     } else {
       // 2. LocalStorage Fallback
       const users = getLocalUsers();
@@ -50,7 +94,16 @@ export const dbService = {
       };
       users.push(newUser);
       saveLocalUsers(users);
-      return { email, name };
+      return {
+        user: {
+          name,
+          email,
+          hasPaid: false,
+          isActive: true
+        },
+        session: null,
+        emailConfirmationRequired: false
+      };
     }
   },
 
@@ -66,7 +119,12 @@ export const dbService = {
         email,
         password
       });
-      if (error) throw error;
+      if (error) {
+        if (error.message && error.message.toLowerCase().includes('confirm')) {
+          throw new Error('Please confirm your email address before logging in. Check your inbox for the verification link.');
+        }
+        throw error;
+      }
       
       // Fetch details from profiles table with fallback
       let { data: profile, error: profileError } = await supabase
@@ -80,7 +138,13 @@ export const dbService = {
       }
       
       if (!profile) {
-        // Create profile on-the-fly if missing (trigger failsafe)
+        // If the account was created more than 5 minutes ago but has no profile, it was deleted
+        const accountAgeMs = new Date().getTime() - new Date(data.user.created_at).getTime();
+        if (accountAgeMs > 5 * 60 * 1000) {
+          throw new Error('This account has been deleted by an administrator. Please contact support.');
+        }
+
+        // Create profile on-the-fly if missing (trigger failsafe for brand new users)
         const newProfile = {
           id: data.user.id,
           name: data.user.user_metadata?.name || 'Valued User',
@@ -157,6 +221,37 @@ export const dbService = {
     } else {
       // Handled in ProfilePage directly via LocalStorage since we need current password verification
     }
+  },
+
+  async fetchUserProfile(userId: string) {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        return {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          hasPaid: data.has_paid,
+          isActive: data.is_active
+        };
+      }
+    }
+    return null;
+  },
+
+  async getCurrentUserProfile() {
+    if (isSupabaseConfigured && supabase) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        return this.fetchUserProfile(user.id);
+      }
+    }
+    return null;
   },
 
   // --- PROFILE SERVICES ---

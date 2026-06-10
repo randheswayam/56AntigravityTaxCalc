@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Shield } from 'lucide-react';
 import { dbService } from '../../utils/dbService';
+import { useAuthStore } from '../../store/useAuthStore';
 
 interface RegisterProps {
   onGoToLogin: () => void;
@@ -12,15 +13,27 @@ export default function Register({ onGoToLogin, onGoToHome }: RegisterProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await dbService.signUp(email, password, name);
-      alert('Registration successful! Please login with your credentials.');
-      onGoToLogin();
+      const result = await dbService.signUp(email, password, name);
+      if (result.emailConfirmationRequired) {
+        alert('Registration successful! A confirmation email has been sent. Please confirm your email before logging in.');
+        onGoToLogin();
+      } else {
+        alert('Registration successful!');
+        if (result.user) {
+          localStorage.setItem('hasPaid', 'false');
+          login(result.user);
+          onGoToHome();
+        } else {
+          onGoToLogin();
+        }
+      }
     } catch (err: any) {
       alert(err.message || 'Registration failed. Please try again.');
     } finally {
