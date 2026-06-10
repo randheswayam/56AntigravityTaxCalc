@@ -44,8 +44,9 @@ export interface TaxState {
   professionalTaxAmount: number;
 
   // Actions
-  updateField: <K extends keyof Omit<TaxState, 'updateField' | 'resetTaxData'>>(field: K, value: TaxState[K]) => void;
+  updateField: <K extends keyof Omit<TaxState, 'updateField' | 'resetTaxData' | 'loadCalculations'>>(field: K, value: TaxState[K]) => void;
   resetTaxData: () => void;
+  loadCalculations: (email: string) => Promise<void>;
 }
 
 const defaultValues = {
@@ -75,9 +76,44 @@ const defaultValues = {
   professionalTaxAmount: 0,
 };
 
+import { dbService } from '../utils/dbService';
+
 export const useTaxStore = create<TaxState>((set) => ({
   ...defaultValues,
 
-  updateField: (field, value) => set((state) => ({ ...state, [field]: value })),
-  resetTaxData: () => set((state) => ({ ...state, ...defaultValues })),
+  updateField: (field, value) => {
+    set((state) => {
+      const newState = { ...state, [field]: value };
+      
+      // Async database persistence
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      if (currentUser && !currentUser.isAdmin) {
+        const { updateField, resetTaxData, loadCalculations, ...dataToSave } = newState;
+        dbService.saveTaxData(currentUser.email, dataToSave).catch(console.error);
+      }
+      
+      return newState;
+    });
+  },
+
+  resetTaxData: () => {
+    set((state) => {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      if (currentUser && !currentUser.isAdmin) {
+        dbService.saveTaxData(currentUser.email, defaultValues).catch(console.error);
+      }
+      return { ...state, ...defaultValues };
+    });
+  },
+
+  loadCalculations: async (email) => {
+    try {
+      const data = await dbService.loadTaxData(email);
+      if (data) {
+        set((state) => ({ ...state, ...data }));
+      }
+    } catch (err) {
+      console.error('Failed to load calculations:', err);
+    }
+  }
 }));

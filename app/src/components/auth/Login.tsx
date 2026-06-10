@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useTaxStore } from '../../store/useTaxStore';
 import { Wallet } from 'lucide-react';
+import { dbService } from '../../utils/dbService';
 
 interface LoginProps {
   onGoToRegister: () => void;
@@ -11,30 +13,29 @@ export default function Login({ onGoToRegister, onGoToHome }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    // Check for admin credentials
-    if (email === 'admin@taxcalc.com' && password === 'admin123') {
-      login({ name: 'System Admin', email: 'admin@taxcalc.com', isAdmin: true });
-      return;
-    }
+    try {
+      const authenticatedUser = await dbService.signIn(email, password);
+      
+      // Write user details to Auth Store (sets currentUser & hasPaid)
+      localStorage.setItem('hasPaid', (!!authenticatedUser.hasPaid).toString());
+      login(authenticatedUser);
 
-    // Fetch mock users from localStorage
-    const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
-    const user = users.find((u: any) => u.email === email && u.password === password);
-
-    if (user) {
-      if (user.isActive === false) {
-        setError('Your account has been deactivated. Please contact support.');
-        return;
+      // Load saved calculations
+      if (!authenticatedUser.isAdmin) {
+        await useTaxStore.getState().loadCalculations(authenticatedUser.email);
       }
-      login({ name: user.name, email: user.email });
-    } else {
-      setError('Invalid email or password. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -82,9 +83,10 @@ export default function Login({ onGoToRegister, onGoToHome }: LoginProps) {
 
           <button
             type="submit"
-            className="w-full bg-primary hover:bg-primary-light text-white font-semibold py-4 rounded-xl transition-all shadow-md transform hover:-translate-y-0.5 mt-4"
+            disabled={isLoading}
+            className="w-full bg-primary hover:bg-primary-light text-white font-semibold py-4 rounded-xl transition-all shadow-md transform hover:-translate-y-0.5 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Login →
+            {isLoading ? 'Logging in...' : 'Login →'}
           </button>
         </form>
 

@@ -13,7 +13,7 @@ import {
   Ban
 } from 'lucide-react';
 
-import { DEFAULT_MOCK_USERS } from '../utils/mockDb';
+import { dbService } from '../utils/dbService';
 import type { UserRecord } from '../utils/mockDb';
 
 interface AdminDashboardProps {
@@ -27,20 +27,14 @@ export default function AdminDashboard({ onExit }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'users'>('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load and seed mock users on mount
+  // Load users on mount
   useEffect(() => {
-    const loadUsers = () => {
-      const stored = localStorage.getItem('mock_users');
-      if (!stored) {
-        localStorage.setItem('mock_users', JSON.stringify(DEFAULT_MOCK_USERS));
-        setUsers(DEFAULT_MOCK_USERS);
-      } else {
-        try {
-          setUsers(JSON.parse(stored));
-        } catch (err) {
-          console.error('Error parsing stored users:', err);
-          setUsers([]);
-        }
+    const loadUsers = async () => {
+      try {
+        const data = await dbService.fetchAllProfiles();
+        setUsers(data);
+      } catch (err) {
+        console.error('Error loading users:', err);
       }
     };
 
@@ -63,50 +57,60 @@ export default function AdminDashboard({ onExit }: AdminDashboardProps) {
     };
   }, []);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      const stored = localStorage.getItem('mock_users');
-      if (stored) {
-        try {
-          setUsers(JSON.parse(stored));
-        } catch (err) {
-          console.error('Error parsing refreshed users:', err);
-        }
-      } else {
-        localStorage.setItem('mock_users', JSON.stringify(DEFAULT_MOCK_USERS));
-        setUsers(DEFAULT_MOCK_USERS);
-      }
-      setIsRefreshing(false);
-    }, 600); // 600ms premium visual feedback delay
-  };
-
-  const saveUsers = (updatedUsers: UserRecord[]) => {
-    localStorage.setItem('mock_users', JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
+    try {
+      const data = await dbService.fetchAllProfiles();
+      setUsers(data);
+    } catch (err) {
+      console.error('Error refreshing users:', err);
+    } finally {
+      // Small visual feedback delay
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
+    }
   };
 
   // Toggle Payment Status
-  const handleTogglePayment = (email: string) => {
-    const updated = users.map((u) => 
-      u.email === email ? { ...u, hasPaid: !u.hasPaid } : u
-    );
-    saveUsers(updated);
+  const handleTogglePayment = async (email: string) => {
+    const userToUpdate = users.find((u) => u.email === email);
+    if (!userToUpdate) return;
+    try {
+      const newStatus = !userToUpdate.hasPaid;
+      await dbService.updateProfilePayment(email, newStatus);
+      setUsers((prev) => 
+        prev.map((u) => u.email === email ? { ...u, hasPaid: newStatus } : u)
+      );
+    } catch (err) {
+      alert('Failed to update payment status.');
+    }
   };
 
   // Toggle Active/Inactive status
-  const handleToggleActive = (email: string) => {
-    const updated = users.map((u) => 
-      u.email === email ? { ...u, isActive: !u.isActive } : u
-    );
-    saveUsers(updated);
+  const handleToggleActive = async (email: string) => {
+    const userToUpdate = users.find((u) => u.email === email);
+    if (!userToUpdate) return;
+    try {
+      const newStatus = !userToUpdate.isActive;
+      await dbService.updateProfileActive(email, newStatus);
+      setUsers((prev) => 
+        prev.map((u) => u.email === email ? { ...u, isActive: newStatus } : u)
+      );
+    } catch (err) {
+      alert('Failed to update user active status.');
+    }
   };
 
   // Delete User
-  const handleDeleteUser = (email: string) => {
+  const handleDeleteUser = async (email: string) => {
     if (window.confirm(`Are you sure you want to delete the user account for ${email}?`)) {
-      const updated = users.filter((u) => u.email !== email);
-      saveUsers(updated);
+      try {
+        await dbService.deleteProfile(email);
+        setUsers((prev) => prev.filter((u) => u.email !== email));
+      } catch (err) {
+        alert('Failed to delete user.');
+      }
     }
   };
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Shield } from 'lucide-react';
+import { dbService } from '../../utils/dbService';
 
 interface RegisterProps {
   onGoToLogin: () => void;
@@ -10,33 +11,21 @@ export default function Register({ onGoToLogin, onGoToHome }: RegisterProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    // Fetch mock users
-    const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
-    
-    // Check if email already exists
-    if (users.find((u: any) => u.email === email)) {
-      alert('Account with this email already exists!');
-      return;
+    try {
+      await dbService.signUp(email, password, name);
+      alert('Registration successful! Please login with your credentials.');
+      onGoToLogin();
+    } catch (err: any) {
+      alert(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    // Save new user
-    const newUser = { 
-      name, 
-      email, 
-      password,
-      createdAt: new Date().toISOString(),
-      hasPaid: false,
-      isActive: true
-    };
-    users.push(newUser);
-    localStorage.setItem('mock_users', JSON.stringify(users));
-
-    alert('Registration successful! Please login with your credentials.');
-    onGoToLogin();
   };
 
   return (
@@ -90,9 +79,10 @@ export default function Register({ onGoToLogin, onGoToHome }: RegisterProps) {
 
           <button
             type="submit"
-            className="w-full bg-primary hover:bg-primary-light text-white font-semibold py-4 rounded-xl transition-all shadow-md transform hover:-translate-y-0.5 mt-4"
+            disabled={isLoading}
+            className="w-full bg-primary hover:bg-primary-light text-white font-semibold py-4 rounded-xl transition-all shadow-md transform hover:-translate-y-0.5 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign Up →
+            {isLoading ? 'Signing up...' : 'Sign Up →'}
           </button>
         </form>
 

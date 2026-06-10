@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+import { dbService } from '../utils/dbService';
 
 export interface User {
+  id?: string;
   name: string;
   email: string;
   isAdmin?: boolean;
@@ -21,16 +23,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: (user) => {
     localStorage.setItem('currentUser', JSON.stringify(user));
     
-    // Determine payment status from user database
+    // Determine payment status from user database if not admin
     let userPaid = false;
     if (user.isAdmin) {
       userPaid = true;
     } else {
-      const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
-      const found = users.find((u: any) => u.email === user.email);
-      if (found) {
-        userPaid = !!found.hasPaid;
-      }
+      // For Supabase, the user profile is resolved directly during signIn.
+      // But we double check in localStorage mock database if using local fallback.
+      const storedHasPaid = localStorage.getItem('hasPaid');
+      userPaid = storedHasPaid === 'true';
     }
     
     localStorage.setItem('hasPaid', userPaid.toString());
@@ -38,6 +39,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   
   logout: () => {
+    dbService.signOut().catch(console.error);
     localStorage.removeItem('currentUser');
     localStorage.removeItem('hasPaid');
     set({ user: null, hasPaid: false });
@@ -46,11 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setPaid: (status) => {
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
     if (currentUser && !currentUser.isAdmin) {
-      const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
-      const updatedUsers = users.map((u: any) => 
-        u.email === currentUser.email ? { ...u, hasPaid: status } : u
-      );
-      localStorage.setItem('mock_users', JSON.stringify(updatedUsers));
+      dbService.updateProfilePayment(currentUser.email, status).catch(console.error);
     }
     
     localStorage.setItem('hasPaid', status.toString());

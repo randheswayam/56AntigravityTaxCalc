@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useTaxStore } from '../store/useTaxStore';
 import { User, Key, CreditCard, RotateCcw, ArrowLeft, Save } from 'lucide-react';
+import { dbService } from '../utils/dbService';
+import { isSupabaseConfigured } from '../utils/supabaseClient';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -21,7 +23,7 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const handleUpdateName = (e: React.FormEvent) => {
+  const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
     setError('');
@@ -32,25 +34,22 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
     }
 
     try {
-      const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
-      const updatedUsers = users.map((u: any) => 
-        u.email === user?.email ? { ...u, name: name.trim() } : u
-      );
-      localStorage.setItem('mock_users', JSON.stringify(updatedUsers));
-      
-      // Update store user state
-      const updatedUser = { ...user, name: name.trim() };
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      // Trigger Zustand reload by calling login
-      useAuthStore.getState().login(updatedUser as any);
-      
-      setMessage('Name updated successfully!');
-    } catch (err) {
-      setError('Failed to update name.');
+      if (user?.email) {
+        await dbService.updateProfileName(user.email, name.trim());
+        
+        // Update local session info
+        const updatedUser = { ...user, name: name.trim() };
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        useAuthStore.getState().login(updatedUser as any);
+        
+        setMessage('Name updated successfully!');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to update name.');
     }
   };
 
-  const handleUpdatePassword = (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage('');
     setError('');
@@ -65,30 +64,39 @@ export default function ProfilePage({ onBack }: ProfilePageProps) {
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
-    const foundUserIndex = users.findIndex((u: any) => u.email === user?.email);
+    try {
+      if (isSupabaseConfigured) {
+        await dbService.updatePassword(newPassword);
+      } else {
+        // LocalStorage fallback password update
+        const users = JSON.parse(localStorage.getItem('mock_users') || '[]');
+        const foundUserIndex = users.findIndex((u: any) => u.email === user?.email);
 
-    if (foundUserIndex === -1) {
-      setError('User not found.');
-      return;
+        if (foundUserIndex === -1) {
+          setError('User not found.');
+          return;
+        }
+
+        // Verify current password
+        if (users[foundUserIndex].password !== currentPassword) {
+          setError('Incorrect current password.');
+          return;
+        }
+
+        // Update password
+        users[foundUserIndex].password = newPassword;
+        localStorage.setItem('mock_users', JSON.stringify(users));
+      }
+      
+      // Clear fields
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      setMessage('Password changed successfully!');
+    } catch (err: any) {
+      setError(err.message || 'Failed to update password.');
     }
-
-    // Verify current password
-    if (users[foundUserIndex].password !== currentPassword) {
-      setError('Incorrect current password.');
-      return;
-    }
-
-    // Update password
-    users[foundUserIndex].password = newPassword;
-    localStorage.setItem('mock_users', JSON.stringify(users));
-    
-    // Clear fields
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    
-    setMessage('Password changed successfully!');
   };
 
   const handleResetProgress = () => {
