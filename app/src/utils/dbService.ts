@@ -1,22 +1,34 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { DEFAULT_MOCK_USERS } from './mockDb';
 
 // Ensure mock users are seeded in localStorage if using fallback
 const getLocalUsers = () => {
   const stored = localStorage.getItem('mock_users');
   if (!stored) {
-    localStorage.setItem('mock_users', JSON.stringify(DEFAULT_MOCK_USERS));
-    return DEFAULT_MOCK_USERS;
+    localStorage.setItem('mock_users', JSON.stringify([]));
+    return [];
   }
   try {
     return JSON.parse(stored);
   } catch (e) {
-    return DEFAULT_MOCK_USERS;
+    return [];
   }
 };
 
 const saveLocalUsers = (users: any[]) => {
   localStorage.setItem('mock_users', JSON.stringify(users));
+};
+
+export const seedMockUsers = () => {
+  const isReset = localStorage.getItem('mock_users_reset_v2');
+  if (!isReset) {
+    localStorage.setItem('mock_users', JSON.stringify([]));
+    localStorage.setItem('mock_users_reset_v2', 'true');
+  } else {
+    const stored = localStorage.getItem('mock_users');
+    if (!stored) {
+      localStorage.setItem('mock_users', JSON.stringify([]));
+    }
+  }
 };
 
 export const dbService = {

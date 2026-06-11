@@ -14,7 +14,14 @@ import {
 } from 'lucide-react';
 
 import { dbService } from '../utils/dbService';
-import type { UserRecord } from '../utils/mockDb';
+interface UserRecord {
+  name: string;
+  email: string;
+  password?: string;
+  createdAt: string;
+  hasPaid: boolean;
+  isActive: boolean;
+}
 
 interface AdminDashboardProps {
   onExit?: () => void;

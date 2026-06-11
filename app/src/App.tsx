@@ -7,7 +7,7 @@ import AdminDashboard from './components/AdminDashboard';
 import ResultPage from './components/ResultPage';
 import ProfilePage from './components/ProfilePage';
 import { useAuthStore } from './store/useAuthStore';
-import { seedMockUsers } from './utils/mockDb';
+import { seedMockUsers } from './utils/dbService';
 import { supabase, isSupabaseConfigured } from './utils/supabaseClient';
 import { dbService } from './utils/dbService';
 
